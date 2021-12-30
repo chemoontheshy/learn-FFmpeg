@@ -1,10 +1,16 @@
 /**
  * @file main.cpp
+ * @author xzf (xzfandzgx@gmal.com)
  * @brief ffmpeg解码MP4例程（C++）
- * @author xzf
- * @version 1.0
+ * @version 0.1
  * @date 2021-12-22
+ * @update 2021-12-29 
+ * 
+ *
+ * @copyright Copyright (c) 2021
+ *
  */
+
 #include <iostream>
 // Windows
 extern "C"

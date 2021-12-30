@@ -4,6 +4,7 @@
 #include <string>
 #include "SDL2/SDL.h"
 #include "structurer.h"
+#include <vector>
 
 using vsnc::utils::Codec;
 
@@ -11,11 +12,40 @@ namespace vsnc
 {
 	namespace vsdl
 	{
-		
+		/// <summary>
+		/// 数据包
+		/// </summary>
+		struct Packet
+		{
+			/// <summary>头指针</summary>
+			uint8_t* data;
+			/// <summary>长度</summary>
+			int len;
+		};
+
 		class SDLPlayer
 		{
 		public:
+			/// <summary>
+			/// 构造函数
+			/// </summary>
+			/// <param name="width">显示的宽度</param>
+			/// <param name="height">显示的高度</param>
+			/// <param name="codec">软解码还是硬解码</param>
+			/// <param name="title">SDL窗口名称</param>
 			SDLPlayer(const int width, const int height,const Codec& codec,const std::string& title);
+
+			/// <summary>
+			/// 析构函数
+			/// </summary>
+			~SDLPlayer();
+
+			/// <summary>
+			/// 显示
+			/// </summary>
+			/// <param name="packets">数据包组</param>
+			/// <returns>正确返回true，错误返回false</returns>
+			bool Show(const std::vector<Packet>& packets);
 
 			
 		private:
