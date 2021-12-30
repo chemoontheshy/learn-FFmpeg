@@ -158,6 +158,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\SDL2-FFmpeg\sdl_player.h" />
+    <ClInclude Include="..\..\src\SDL2-FFmpeg\structurer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
