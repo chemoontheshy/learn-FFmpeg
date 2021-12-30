@@ -13,7 +13,7 @@
 
 创建时间：2021/12/22
 
-更新时间：2021/12/22
+更新时间：2021/12/30
 
 ## 说明
 
@@ -25,7 +25,8 @@
 - FFmpeg: `ffmpeg-4.4-full_build-shared(x64)`
 - 编译器：`vs2019-community`
 - opencv：`4.5.0`
-- cmake :`3.22.1`
+- cmake : `3.22.1`
+- SDL: `SDL version 2.0.18 (stable)`
 
 ## 验证 FFmpeg 安装
 

@@ -22,6 +22,11 @@ extern "C"
 #include "libswscale/swscale.h"
 }
 #include "sdl_player.h"
+#include <thread>
+
+void moveTest(std::shared_ptr<vsnc::vsdl::SDLPlayer> player) {
+
+}
 
 int main(int argc, char* argv[])
 {
@@ -125,7 +130,9 @@ int main(int argc, char* argv[])
 	videoHeight = videoCodec->height;
 
 	//创建SDL
-	vsnc::vsdl::SDLPlayer sdlPlayer(videoWidth, videoHeight, codec, "SDLTest");
+	std::shared_ptr<vsnc::vsdl::SDLPlayer> sdlPlayer;
+	sdlPlayer = std::make_shared<vsnc::vsdl::SDLPlayer>(videoWidth, videoHeight, codec, "SDLTest");
+	//std::thread t(moveTest, sdlPlayer);
 	std::vector<vsnc::vsdl::Packet> sdlPackets(3);
 	//SDL
 	while (true) {
@@ -161,7 +168,7 @@ int main(int argc, char* argv[])
 					sdlPackets.at(1).len = frame->linesize[1];
 				}
 				
-				sdlPlayer.Show(sdlPackets);
+				sdlPlayer->Show(sdlPackets);
 				//视频是25帧，每次间隔是40ms,实时流不需要延时，解码完就播放
 				Sleep(35);
 			}
