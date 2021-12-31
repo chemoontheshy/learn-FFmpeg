@@ -5,6 +5,8 @@
 #include "SDL2/SDL.h"
 #include "structurer.h"
 #include <vector>
+#include <list>
+#include <thread>
 
 using vsnc::utils::Codec;
 
@@ -78,6 +80,15 @@ namespace vsnc
 
 			/// <summary>解码类型</summary>
 			std::string   m_sTitle;
+
+			/// <summary>解码类型</summary>
+			SDL_Thread*   m_pThread;
+
+			std::thread*  m_tThread;
+			
+			void          __show();
+
+			std::list<std::vector<vsnc::vsdl::Packet>> lstPackets;
 		};
 	}
 }

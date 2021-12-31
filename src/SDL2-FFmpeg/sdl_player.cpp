@@ -1,5 +1,30 @@
 #include "sdl_player.h"
 #include <iostream>
+#include <mutex>
+
+std::mutex sdlLock;
+
+//刷新事件
+# define REFRESH_EVENT  (SDL_USEREVENT + 1) 
+
+//线程每40ms刷新一次
+int thread_exit = 0;
+int thread_pause = 0;
+
+int sfp_refresh_thread(void* opaque) {
+	thread_exit = 0;
+	
+	while (!thread_exit) {
+		SDL_Event event;
+		event.type = REFRESH_EVENT;
+		std::cout << event.type << std::endl;
+		SDL_PushEvent(&event);
+		SDL_Delay(40);
+
+	}
+	thread_exit = 0;
+	return 0;
+}
 
 vsnc::vsdl::SDLPlayer::SDLPlayer(const int width, const int height, const Codec& codec, const std::string& title) :
 	m_iWidth(width), m_iHeight(height),m_eCodec(codec)
@@ -45,6 +70,8 @@ vsnc::vsdl::SDLPlayer::SDLPlayer(const int width, const int height, const Codec&
 	m_sRect.y = 0;
 	m_sRect.w = m_iWidth;
 	m_sRect.h = m_iHeight;
+	//创建线程
+	//m_tThread = new std::thread([this]() {this->__show(); });
 }
 
 vsnc::vsdl::SDLPlayer::~SDLPlayer()
@@ -75,9 +102,15 @@ bool vsnc::vsdl::SDLPlayer::Show(const std::vector<Packet>& packets)
 			packets.at(1).data, packets.at(1).len,
 			packets.at(2).data, packets.at(2).len);
 	}
-	
 	SDL_RenderClear(m_pRenderer);
 	SDL_RenderCopy(m_pRenderer, m_pTexture, nullptr, &m_sRect);
 	SDL_RenderPresent(m_pRenderer);
-	return false;
+	return true;
+	
 }
+
+void vsnc::vsdl::SDLPlayer::__show()
+{
+	
+}
+

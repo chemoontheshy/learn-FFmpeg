@@ -24,9 +24,6 @@ extern "C"
 #include "sdl_player.h"
 #include <thread>
 
-void moveTest(std::shared_ptr<vsnc::vsdl::SDLPlayer> player) {
-
-}
 
 int main(int argc, char* argv[])
 {
@@ -57,7 +54,7 @@ int main(int argc, char* argv[])
 	// 视频流
 	AVStream* videoStream;
 	// 解码类型---这里非常重要，要切换修改这里
-	vsnc::utils::Codec codec = vsnc::utils::Codec::HARDWARE;
+	vsnc::utils::Codec codec = vsnc::utils::Codec::SOFTWARE;
 	
 	// 如果需要解析网络RTSP流。需要加
 	// avformat_network_init();
@@ -134,7 +131,6 @@ int main(int argc, char* argv[])
 	sdlPlayer = std::make_shared<vsnc::vsdl::SDLPlayer>(videoWidth, videoHeight, codec, "SDLTest");
 	//std::thread t(moveTest, sdlPlayer);
 	std::vector<vsnc::vsdl::Packet> sdlPackets(3);
-	//SDL
 	while (true) {
 		// 10.从pFormatCtx获取packet
 		if (av_read_frame(pFormatCtx, packet) < 0) {
@@ -167,7 +163,7 @@ int main(int argc, char* argv[])
 					sdlPackets.at(1).data = frame->data[1];
 					sdlPackets.at(1).len = frame->linesize[1];
 				}
-				
+
 				sdlPlayer->Show(sdlPackets);
 				//视频是25帧，每次间隔是40ms,实时流不需要延时，解码完就播放
 				Sleep(35);
@@ -175,6 +171,7 @@ int main(int argc, char* argv[])
 		}
 		av_packet_unref(packet);
 		av_freep(packet);
+		
 	}
 	// 14.释放内存
 	if (packet) {

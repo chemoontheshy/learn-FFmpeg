@@ -10,6 +10,14 @@ namespace vsnc
 			SOFTWARE,
 			HARDWARE
 		};
+
+		struct Header
+		{
+			uint16_t Id;
+			uint16_t Type;
+			uint8_t  No[6];
+			uint16_t Sequence;
+		};
 	}
 }
 
