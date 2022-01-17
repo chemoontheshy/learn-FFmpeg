@@ -197,3 +197,7 @@ opencv有两种安装方法，一种是官方提供的安装包，一种是自�
 打开后，直接生成全部，会遇到debug版本python不过，
 
 直接打开python修改，安装python debug版本即可通过。
+
+### opencv播放
+
+参考：https://github.com/chemoontheshy/learn-FFmpeg的opencv-FFmpeg
