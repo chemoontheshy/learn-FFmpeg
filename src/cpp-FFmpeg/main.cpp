@@ -1,13 +1,11 @@
 /**
- * @file main.cpp
- * @author xzf (xzfandzgx@gmal.com)
- * @brief ffmpeg解码MP4例程（C++）
- * @version 0.1
- * @date 2021-12-22
- * @update 2021-12-29 
- * 
- *
- * @copyright Copyright (c) 2021
+ * @File main.cpp
+ * @Brief FFmpeg 解码MP4(已测试
+ * @Author xzf (xzfandzgx@gmal.com)
+ * @Contact
+ * @Version 1.0
+ * @Date 2021-01-14
+ * @copyright Copyright (c) 2022
  *
  */
 

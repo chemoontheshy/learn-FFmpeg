@@ -1,12 +1,10 @@
 /**
- * @file main.cpp
- * @author xzf (xzfandzgx@gmal.com)
- * @brief ffmpeg推流RTMP
- * @version 1.0
- * @date 2022-01-13
- * @update 2022-01-13
- *
- *
+ * @File main.cpp
+ * @Brief FFmpeg 解码，RTMP推流，未经测试
+ * @Author xzf (xzfandzgx@gmal.com)
+ * @Contact
+ * @Version 1.0
+ * @Date 2021-01-14
  * @copyright Copyright (c) 2022
  *
  */
@@ -95,7 +93,18 @@ int main()
 		return -1;
 	}
 	// 3.配置输出流 av_codec_parameters_copy
-	
+	auto outStream = avformat_new_stream(oFormatContext, videoDecoder);
+	outStream->time_base = AVRational{ 25,1 };
+	if (!outStream) {
+		std::cout << "outStream failed." << std::endl;
+		return -1;
+	}
+	if (oFormatContext->oformat->flags & AVFMT_GLOBALHEADER) {
+		std::cout << "need"<< std::endl;
+		videoCodec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+	}
+	avcodec_parameters_from_context(outStream->codecpar, videoCodec);
+	av_dump_format(oFormatContext, 0, outUrl, 1);
 	// 4.打开输出IO avio_open
 	ret = avio_open(&oFormatContext->pb, outUrl, AVIO_FLAG_READ_WRITE);
 	if (ret < 0) {
@@ -105,7 +114,7 @@ int main()
 		std::cout << " failed! " << buf << std::endl;
 		return -1;
 	}
-
+	std::cout << "test"<< std::endl;
 	// 5.写入头部信息 avformat_write_header
 	ret = avformat_write_header(oFormatContext, 0);
 	if (ret < 0) {
