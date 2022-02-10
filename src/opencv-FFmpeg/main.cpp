@@ -59,7 +59,7 @@ int main()
 	AVStream* videoStream;
 
 	//设置路径
-	filePath = "../../3rdparty/video/test.mp4";
+	filePath = "../../3rdparty/video/out.mp4";
 
 	// 1.FFmpeg
 	// 1.1.初始化总句柄

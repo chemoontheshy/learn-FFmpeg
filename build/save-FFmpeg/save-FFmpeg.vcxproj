@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{8b3c6a14-0b4a-477e-a886-c4558097032f}</ProjectGuid>
-    <RootNamespace>RTMPFFmpeg</RootNamespace>
+    <ProjectGuid>{8728827f-8190-4ac4-8e87-66613f7d1ded}</ProjectGuid>
+    <RootNamespace>saveFFmpeg</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -155,11 +155,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\RTMP-FFmpeg\main.cpp" />
-    <ClCompile Include="..\..\src\RTMP-FFmpeg\splitnalu.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\src\RTMP-FFmpeg\splitnalu.h" />
+    <ClCompile Include="..\..\src\save-FFmpeg\main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
