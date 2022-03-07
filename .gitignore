@@ -365,3 +365,5 @@ FodyWeavers.xsd
 *.lib
 *.mp4
 *.avi
+*.flv
+*.ts

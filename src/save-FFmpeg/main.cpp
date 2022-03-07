@@ -128,8 +128,6 @@ int main()
 	avcodec_parameters_from_context(outStream->codecpar, videoCodec);
 
 	//AVStream outStream;
-	outStream->time_base.den = 25;
-	outStream->time_base.num = 1;
 	av_dump_format(oFormatCtx, 0, outUrl, 1);
 	// 4.打开输出IO avio_open
 	ret = avio_open(&oFormatCtx->pb, outUrl, AVIO_FLAG_READ_WRITE);
@@ -149,21 +147,21 @@ int main()
 	}
 	char errorStr[1024];
 	// 开始解码
+	int64_t test = 0;
 	while (true) {
 		// 10.从pFormatCtx获取packet
 		if (av_read_frame(iFormatCtx, packet) < 0) {
 			break;
 		}
 		// 11.只有是视频流才输出
+
 		if (packet->stream_index == 0)
 		{
-			packet->pts = av_rescale_q_rnd(packet->pts, videoStream->time_base, outStream->time_base,static_cast<AVRounding>(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-			packet->dts = av_rescale_q_rnd(packet->dts, videoStream->time_base, outStream->time_base, static_cast<AVRounding>(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-			packet->duration = av_rescale_q(packet->duration, videoStream->time_base, outStream->time_base);
-			packet->pos = -1;
-			std::cout <<"pts" <<packet->pts << std::endl;
-			std::cout << "dts"<<packet->dts << std::endl;
-			std::cout <<"duration" <<packet->duration << std::endl;
+			// 将packet中的各时间值从输入流封装格式时间基转换到输出流封装格式时间基
+			//av_packet_rescale_ts(packet, videoStream->time_base, outStream->time_base);
+			auto inputStream = iFormatCtx->streams[packet->stream_index];
+			auto outputStream = oFormatCtx->streams[packet->stream_index];
+			av_packet_rescale_ts(packet, inputStream->time_base, outputStream->time_base);
 			auto ret = av_interleaved_write_frame(oFormatCtx, packet);
 			if (ret < 0)
 			{
