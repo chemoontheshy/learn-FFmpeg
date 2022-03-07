@@ -129,7 +129,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)..\3rdparty\lib;$(SolutionDir)..\3rdparty\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avcodec.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;SDL2main.lib;SDL2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;avcodec.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;SDL2main.lib;SDL2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -149,16 +149,18 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)..\3rdparty\lib;$(SolutionDir)..\3rdparty\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avcodec.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;SDL2main.lib;SDL2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;avcodec.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;SDL2main.lib;SDL2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\SDL2-FFmpeg\main.cpp" />
     <ClCompile Include="..\..\src\SDL2-FFmpeg\sdl_player.cpp" />
+    <ClCompile Include="..\..\src\SDL2-FFmpeg\unpack.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\SDL2-FFmpeg\sdl_player.h" />
     <ClInclude Include="..\..\src\SDL2-FFmpeg\structurer.h" />
+    <ClInclude Include="..\..\src\SDL2-FFmpeg\unpack.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,188 +1,180 @@
-/**
- * @File main.cpp
- * @Brief FFmpeg 解码，SDL播放(未解决SDL可移动）
- * @Author xzf (xzfandzgx@gmal.com)
- * @Contact
- * @Version 1.0
- * @Date 2021-01-14
- * @copyright Copyright (c) 2022
- *
- */
-
 #include <iostream>
-#include <Windows.h>
- // Windows
+#include <winsock2.h>
+#include <WS2tcpip.h>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <fstream>
+#include <thread>
+#include "unpack.h"
+#include "sdl_player.h"
+//当前C++兼容C语言
 extern "C"
 {
-	//
-#include "libavcodec/avcodec.h"
-#include "libavformat/avformat.h"
-#include "libswscale/swscale.h"
+	// avcodec:编解码(最重要的库)
+#include <libavcodec/avcodec.h>
+// avformat:封装格式处理
+#include <libavformat/avformat.h>
+// swscale:视频像素数据格式转换
+#include <libswscale/swscale.h>
+// avutil:工具库（大部分库都需要这个库的支持）
+#include <libavutil/avutil.h>
+#include <libavutil/imgutils.h>
 }
-#include "sdl_player.h"
-#include <thread>
+
+/// <summary>
+/// 输入q退出
+/// </summary>
+/// <param name="run">是否运行的标志符</param>
+static void quit(bool& run)
+{
+	char c = '\0';
+	do {
+		std::cin >> c;
+	} while ('q' != c);
+	run = false;
+}
 
 
 int main(int argc, char* argv[])
 {
-	// 帧计算
-	int              num = 0;
-	// ffmpeg返回值
-	int              ret;
-	// 表示解码一帧完成
-	int              frameFinish;
-	// 视频宽带
-	int              videoWidth;
-	// 视频高度
-	int              videoHeight;
-	// 视频流索引
-	int              videoStreamIndex;
-	// 视频流地址
-	std::string      filePath;
-	// 缓存Packet 存储压缩的数据（视频对应H.264等码流数据，音频对应PCM采样数据）
-	AVPacket* packet;
-	// 缓存Frame 存储非压缩的数据（视频对应RGB/YUV像素数据。音频对应PCM采样数据）
-	AVFrame* frame;
-	// 统领全局的基本结构体。主要用于处理封装格式（FLV/RMVB等)。
-	AVFormatContext* pFormatCtx;
-	// 视频解码句柄
-	AVCodecContext* videoCodec;
-	// 视频解码器
-	AVCodec* videoDecoder;
-	// 视频流
-	AVStream* videoStream;
-	// 解码类型---这里非常重要，要切换修改这里
-	vsnc::utils::Codec codec = vsnc::utils::Codec::SOFTWARE;
 	
-	// 如果需要解析网络RTSP流。需要加
-	// avformat_network_init();
+	// 3.socket部分
+	// socket初始化
+	WORD sockVersion = MAKEWORD(2, 2);
+	WSADATA wsaData;
+	if (WSAStartup(sockVersion, &wsaData) != 0)
+	{
+		return -1;
+	}
+	// 接受数据部分
+	auto socketFD = socket(AF_INET, SOCK_DGRAM, 0);
+	sockaddr_in addr;
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(4000);
+	((struct sockaddr_in&)addr).sin_addr.s_addr = INADDR_ANY;
+	if (bind(socketFD, reinterpret_cast<sockaddr*>(&addr), sizeof(sockaddr_in)) < 0) {
+		std::cout << "UDP::bind() failed." << std::endl;
+		return -1;
+	}
+	// 接收数据包缓存区
+	char rBuf[1500] = { 0 };
+	sockaddr_in client;
+	socklen_t clientLen = sizeof(sockaddr_in);
 
-	//设置路径
-	filePath = "../../3rdparty/video/test.mp4";
-
-	// 1.初始化总句柄
-	pFormatCtx = avformat_alloc_context();
-
-	// 2.打开视频
-	ret = avformat_open_input(&pFormatCtx, filePath.c_str(), nullptr, nullptr);
-	if (ret < 0) {
-		std::cout << "Open file fail." << std::endl;
-		return 0;
+	int width = 1920;
+	int height = 1088;
+	// 设置两帧的socket接收的缓冲区
+	int rcvBufSize = width * height * 3;
+	socklen_t optLen = sizeof(rcvBufSize);
+	if (setsockopt(socketFD, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&rcvBufSize), optLen) < 0) {
+		std::cout << "setsockopt failed." << std::endl;
+		return -1;
 	}
 
-	// 3.获取流信息
-	ret = avformat_find_stream_info(pFormatCtx, nullptr);
-	if (ret < 0) {
-		std::cout << "Find stream info fail." << std::endl;
-		return 0;
-	}
-	// 4.视频流索引（仅视频流
-	videoStreamIndex = av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_VIDEO, -1, -1, &videoDecoder, 0);
-	if (!videoStreamIndex) {
-		std::cout << "Don't find videoStream" << std::endl;
-		return 0;
-	}
+	// 4.FFmpeg解码 
+	// 获取视频流解码器或
+	AVCodecParserContext* parser = nullptr;
+	// 寻找解码器
+	AVCodec* videoDecoder = nullptr;
+	videoDecoder = avcodec_find_decoder_by_name("h264_qsv");
 
-	// 5.获取视频流
-	videoStream = pFormatCtx->streams[videoStreamIndex];
-
-	// 6.获取视频流解码器或者指定解码器
-	// 可以直接指定，也可以根据上下文来确定解码器类型
-	videoCodec = avcodec_alloc_context3(nullptr);
-	// 由于上面没有指定，所以把上下文解析出来的放到videoCodec里
-	avcodec_parameters_to_context(videoCodec, videoStream->codecpar);
-
-	// 7.解码.选择软解码还是硬解码
-	// 软解码
-	if (codec == vsnc::utils::Codec::SOFTWARE) {
-		videoDecoder = avcodec_find_decoder(videoCodec->codec_id);
+	if (videoDecoder == nullptr) {
+		std::cout << "video decoder not foud." << std::endl;
+		return -1;
 	}
-	// 硬解码 
-	else {
-		videoDecoder = avcodec_find_decoder_by_name("h264_qsv");
+	parser = av_parser_init(videoDecoder->id);
+	if (!parser) {
+		fprintf(stderr, "parser not found\n");
+		return -1;
 	}
-	if (!videoDecoder) {
-		std::cout << "Video decoder not fond." << std::endl;
-		return 0;
+	// 获取视频流解码器或者指定解码器
+	auto videoCodec = avcodec_alloc_context3(videoDecoder);
+	if (!videoCodec) {
+		fprintf(stderr, "Could not allocate video codec context\n");
+		return -1;
 	}
-
-	//设置加速解码
+	// 设置加速解码
 	videoCodec->lowres = videoDecoder->max_lowres;
 	videoCodec->flags2 |= AV_CODEC_FLAG2_FAST;
+	// 初始化
+	// 打开解码器
+	videoCodec->width = width;
+	videoCodec->height = height;
 
-	// 8.打开解码器
-	ret = avcodec_open2(videoCodec, videoDecoder, nullptr);
+	int ret = avcodec_open2(videoCodec, videoDecoder, nullptr);
 	if (ret < 0) {
-		std::cout << "Open videocode error." << std::endl;
-		return 0;
+		std::cout << "open video codec error" << std::endl;
+		return -1;
 	}
 
-	// 9.分配内存
-	packet = av_packet_alloc();
-	frame = av_frame_alloc();
-	// 开始解码
-	videoWidth = videoCodec->width;
-	videoHeight = videoCodec->height;
-
-	//创建SDL
-	std::shared_ptr<vsnc::vsdl::SDLPlayer> sdlPlayer;
-	sdlPlayer = std::make_shared<vsnc::vsdl::SDLPlayer>(videoWidth, videoHeight, codec, "SDLTest");
-	//std::thread t(moveTest, sdlPlayer);
+	AVPacket* packet = av_packet_alloc();
+	AVFrame* frame = av_frame_alloc();
+	AVFrame* frameBGR = av_frame_alloc();
+	//5
+	std::unique_ptr<vsnc::vsdl::SDLPlayer> sdlPlayer;
+	sdlPlayer = std::make_unique<vsnc::vsdl::SDLPlayer>(width, height, vsnc::utils::Codec::HARDWARE, "SDLTest");
 	std::vector<vsnc::vsdl::Packet> sdlPackets(3);
-	while (true) {
-		// 10.从pFormatCtx获取packet
-		if (av_read_frame(pFormatCtx, packet) < 0) {
-			break;
-		}
-		// 11.只有是视频流才输出
-		if (packet->stream_index == videoStreamIndex) {
-			// 12.发送packet到videoCodec
-			frameFinish = avcodec_send_packet(videoCodec, packet);
-			if (frameFinish < 0) continue;
-			// 13.从videoCodec获取返回frame
-			frameFinish = avcodec_receive_frame(videoCodec, frame);
-			if (frameFinish < 0) continue;
-			if (frameFinish >= 0) {
-				//这里获取frame,可以通过转格式，用qt,SDL，opencv画出来
-				num++;
-				std::cout << "finish decode " << num << " frame." << std::endl;
-				// 软解码
-				if (codec == vsnc::utils::Codec::SOFTWARE) {
-					sdlPackets.at(0).data = frame->data[0];
-					sdlPackets.at(0).len = frame->linesize[0];
-					sdlPackets.at(1).data = frame->data[1];
-					sdlPackets.at(1).len = frame->linesize[1];
-					sdlPackets.at(2).data = frame->data[2];
-					sdlPackets.at(2).len = frame->linesize[2];
-				}
-				else {
-					sdlPackets.at(0).data = frame->data[0];
-					sdlPackets.at(0).len = frame->linesize[0];
-					sdlPackets.at(1).data = frame->data[1];
-					sdlPackets.at(1).len = frame->linesize[1];
-				}
+	// 6.退出设置
+	bool run = true;
+	std::thread watch(&quit, std::ref(run));
 
-				sdlPlayer->Show(sdlPackets);
-				//视频是25帧，每次间隔是40ms,实时流不需要延时，解码完就播放
-				Sleep(35);
+	// 7.其他
+	// 计数
+	int num = 0;
+	// 用于判断是否生成帧
+	int frameFinish = 0;
+	// 输出RTP解析后数据包
+	vsnc::vpack::__VPacket outPacket;
+
+	while (run) {
+		auto size = recvfrom(socketFD, rBuf, sizeof(rBuf), 0, reinterpret_cast<sockaddr*>(&client), &clientLen);
+		if (size > 0) {
+			outPacket = vsnc::vpack::unPack(vsnc::vpack::CodecID::H264, reinterpret_cast<uint8_t*>(rBuf), size);
+			while (outPacket.Size > 0)
+			{
+				ret = av_parser_parse2(parser, videoCodec, &(packet->data), &(packet->size),
+					outPacket.Head, static_cast<int>(outPacket.Size),
+					AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+				outPacket.Head += ret;
+				outPacket.Size -= ret;
+				if (ret < 0) {
+					std::cout << "Error while parsing" << std::endl;
+					break;
+				}
+				if (packet->size > 0) {
+					frameFinish = avcodec_send_packet(videoCodec, packet);
+
+					if (frameFinish < 0) {
+						continue;
+					}
+					frameFinish = avcodec_receive_frame(videoCodec, frame);
+
+					if (frameFinish < 0) {
+						continue;
+					}
+					else {
+						num++;
+						std::cout << "finish decode " << num << " frame." << std::endl;
+						// 显示：
+						sdlPackets.at(0).data = frame->data[0];
+						sdlPackets.at(0).len = frame->linesize[0];
+						sdlPackets.at(1).data = frame->data[1];
+						sdlPackets.at(1).len = frame->linesize[1];
+						sdlPlayer->Show(sdlPackets);
+					}
+				}
 			}
+			av_packet_unref(packet);
+			av_freep(packet);
 		}
-		av_packet_unref(packet);
-		av_freep(packet);
-		
+
 	}
-	// 14.释放内存
-	if (packet) {
-		av_packet_unref(packet);
-	}
-	if (frame) {
-		av_frame_free(&frame);
-	}
-	if (videoCodec) {
-		avcodec_close(videoCodec);
-	}
-	if (pFormatCtx) {
-		avformat_free_context(pFormatCtx);
-	}
+	//file.close();
+	// 释放指针
+	avcodec_close(videoCodec);
+	av_frame_free(&frame);
+	av_frame_free(&frameBGR);
+	// 关闭socket
+	closesocket(socketFD);
 	return 0;
 }

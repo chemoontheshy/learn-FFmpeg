@@ -70,8 +70,6 @@ vsnc::vsdl::SDLPlayer::SDLPlayer(const int width, const int height, const Codec&
 	m_sRect.y = 0;
 	m_sRect.w = m_iWidth;
 	m_sRect.h = m_iHeight;
-	//创建线程
-	//m_tThread = new std::thread([this]() {this->__show(); });
 }
 
 vsnc::vsdl::SDLPlayer::~SDLPlayer()

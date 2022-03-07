@@ -155,25 +155,17 @@ int main()
 			break;
 		}
 		// 11.只有是视频流才输出
-		if (packet->stream_index == 0)
+		av_packet_rescale_ts(packet, videoCodec->time_base, outStream->time_base);
+		auto ret = av_interleaved_write_frame(oFormatCtx, packet);
+		std::cout << packet->stream_index << std::endl;
+		if (ret < 0)
 		{
-			packet->pts = av_rescale_q_rnd(packet->pts, videoStream->time_base, outStream->time_base,static_cast<AVRounding>(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-			packet->dts = av_rescale_q_rnd(packet->dts, videoStream->time_base, outStream->time_base, static_cast<AVRounding>(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-			packet->duration = av_rescale_q(packet->duration, videoStream->time_base, outStream->time_base);
-			packet->pos = -1;
-			std::cout <<"pts" <<packet->pts << std::endl;
-			std::cout << "dts"<<packet->dts << std::endl;
-			std::cout <<"duration" <<packet->duration << std::endl;
-			auto ret = av_interleaved_write_frame(oFormatCtx, packet);
-			if (ret < 0)
-			{
-				std::cout << "error" << ret << std::endl;
-				av_strerror(ret, errorStr, 1024);
-			}
-			else {
-				num++;
-				std::cout << "finish write " << num << " packet." << std::endl;
-			}
+			std::cout << "error" << ret << std::endl;
+			av_strerror(ret, errorStr, 1024);
+		}
+		else {
+			num++;
+			std::cout << "finish write " << num << " packet." << std::endl;
 		}
 		av_packet_unref(packet);
 		av_freep(packet);
