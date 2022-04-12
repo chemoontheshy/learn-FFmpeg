@@ -367,3 +367,5 @@ FodyWeavers.xsd
 *.avi
 *.flv
 *.ts
+*.pcm
+*.mp3

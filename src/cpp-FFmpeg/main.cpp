@@ -69,7 +69,7 @@ int main()
 	}
 	// 4.视频流索引（仅视频流
 	videoStreamIndex = av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_VIDEO, -1, -1, &videoDecoder, 0);
-	if (!videoStreamIndex) {
+	if (videoStreamIndex < 0) {
 		std::cout << "Don't find videoStream" << std::endl;
 		return 0;
 	}
