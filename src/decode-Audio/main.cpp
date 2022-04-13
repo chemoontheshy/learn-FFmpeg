@@ -1,10 +1,10 @@
 /**
  * @File main.cpp
- * @Brief FFmpeg 解码MP4,解码音频
+ * @Brief FFmpeg 解码MP4(已测试
  * @Author xzf (xzfandzgx@gmal.com)
  * @Contact
  * @Version 1.0
- * @Date 2021-04-12
+ * @Date 2021-01-14
  * @copyright Copyright (c) 2022
  *
  */
@@ -18,109 +18,147 @@ extern "C"
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
-#include "libswresample/swresample.h"
 }
-
-#define MAX_AUDIO_FRAME_SIZE 192000
 
 int main()
 {
+	// 帧计算
+	int              num = 0;
+	// ffmpeg返回值
+	int              ret;
+	// 表示解码一帧完成
+	int              frameFinish;
+	// 视频宽带
+	int              videoWidth;
+	// 视频高度
+	int              videoHeight;
+	// 视频流索引
+	int              videoStreamIndex;
+	// 视频流地址
+	std::string      filePath;
+	// 缓存Packet 存储压缩的数据（视频对应H.264等码流数据，音频对应PCM采样数据）
+	AVPacket* packet;
+	// 缓存Frame 存储非压缩的数据（视频对应RGB/YUV像素数据。音频对应PCM采样数据）
+	AVFrame* frame;
+	// 统领全局的基本结构体。主要用于处理封装格式（FLV/RMVB等)。
+	AVFormatContext* pFormatCtx;
+	// 视频解码句柄
+	AVCodecContext* videoCodec;
+	// 视频解码器
+	AVCodec* videoDecoder;
+	// 视频流
+	AVStream* videoStream;
 
-    const char inFileName[] = "../../3rdparty/video/test.mp4";
-    const char outFileName[] = "test.pcm";
-    FILE* file = fopen(outFileName, "w+b");
-    if (!file) {
-        printf("Cannot open output file.\n");
-        return -1;
-    }
+	//设置路径
+	filePath = "../../3rdparty/video/test.mp4";
 
-    AVFormatContext* fmtCtx = avformat_alloc_context();
-    AVCodecContext* codecCtx = NULL;
-    AVPacket* pkt = av_packet_alloc();
-    AVFrame* frame = av_frame_alloc();
+	// 1.初始化总句柄
+	pFormatCtx = avformat_alloc_context();
 
-    int aStreamIndex = -1;
+	// 2.打开视频
+	ret = avformat_open_input(&pFormatCtx, filePath.c_str(), nullptr, nullptr);
+	if (ret < 0) {
+		std::cout << "Open file fail." << std::endl;
+		return 0;
+	}
 
-    do {
+	// 3.获取流信息
+	ret = avformat_find_stream_info(pFormatCtx, nullptr);
+	if (ret < 0) {
+		std::cout << "Find stream info fail." << std::endl;
+		return 0;
+	}
+	// 4.视频流索引（仅视频流
+	videoStreamIndex = av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, -1, &videoDecoder, 0);
+	if (videoStreamIndex < 0) {
+		std::cout << "Don't find videoStream" << std::endl;
+		return 0;
+	}
 
-        if (avformat_open_input(&fmtCtx, inFileName, NULL, NULL) < 0) {
-            printf("Cannot open input file.\n");
-            return -1;
-        }
-        if (avformat_find_stream_info(fmtCtx, NULL) < 0) {
-            printf("Cannot find any stream in file.\n");
-            return -1;
-        }
+	// 5.获取视频流
+	videoStream = pFormatCtx->streams[videoStreamIndex];
 
-        av_dump_format(fmtCtx, 0, inFileName, 0);
+	// 6.获取视频流解码器或者指定解码器
+	// 可以直接指定，也可以根据上下文来确定解码器类型
+	videoCodec = avcodec_alloc_context3(nullptr);
+	// 由于上面没有指定，所以把上下文解析出来的放到videoCodec里
+	avcodec_parameters_to_context(videoCodec, videoStream->codecpar);
 
-        for (size_t i = 0; i < fmtCtx->nb_streams; i++) {
-            if (fmtCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-                aStreamIndex = (int)i;
-                break;
-            }
-        }
-        if (aStreamIndex == -1) {
-            printf("Cannot find audio stream.\n");
-            return -1;
-        }
+	// 7.解码.选择软解码还是硬解码
+	videoDecoder = avcodec_find_decoder(videoCodec->codec_id);
+	// 硬解码 
+	//videoDecoder = avcodec_find_decoder_by_name("h264_qsv");
+	if (!videoDecoder) {
+		std::cout << "Video decoder not fond." << std::endl;
+		return 0;
+	}
 
-        AVCodecParameters* aCodecPara = fmtCtx->streams[aStreamIndex]->codecpar;
-        AVCodec* codec = avcodec_find_decoder(aCodecPara->codec_id);
-        if (!codec) {
-            printf("Cannot find any codec for audio.\n");
-            return -1;
-        }
-        codecCtx = avcodec_alloc_context3(codec);
-        if (avcodec_parameters_to_context(codecCtx, aCodecPara) < 0) {
-            printf("Cannot alloc codec context.\n");
-            return -1;
-        }
-        codecCtx->pkt_timebase = fmtCtx->streams[aStreamIndex]->time_base;
+	// 8.打开解码器
+	ret = avcodec_open2(videoCodec, videoDecoder, nullptr);
+	if (ret < 0) {
+		std::cout << "Open videocode error." << std::endl;
+		return 0;
+	}
 
-        if (avcodec_open2(codecCtx, codec, NULL) < 0) {
-            printf("Cannot open audio codec.\n");
-            return -1;
-        }
-        size_t num = 0;
-        std::fstream f;
-        f.open("m_f32le.pcm", std::ios::out | std::ios::app);
-        while (av_read_frame(fmtCtx, pkt) >= 0) {
-            if (pkt->stream_index == aStreamIndex) {
-                if (avcodec_send_packet(codecCtx, pkt) >= 0) {
-                    while (avcodec_receive_frame(codecCtx, frame) >= 0) {
-                        /*
-                          Planar（平面），其数据格式排列方式为 (特别记住，该处是以点nb_samples采样点来交错，不是以字节交错）:
-                          LLLLLLRRRRRRLLLLLLRRRRRRLLLLLLRRRRRRL...（每个LLLLLLRRRRRR为一个音频帧）
-                          而不带P的数据格式（即交错排列）排列方式为：
-                          LRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRL...（每个LR为一个音频样本）
-                        */
-                        if (av_sample_fmt_is_planar(codecCtx->sample_fmt)) {
-                            int numBytes = av_get_bytes_per_sample(codecCtx->sample_fmt);
-                            //pcm播放时是LRLRLR格式，所以要交错保存数据
-                          
-                            for (int i = 0; i < frame->nb_samples; i++) {
-                                for (int ch = 0; ch < codecCtx->channels; ch++) {
-                                    fwrite((char*)frame->data[ch] + numBytes * i, 1, numBytes, file);
-                                    f.write((char*)frame->data[ch] + numBytes * i, numBytes);
-                                }
-                            }
-                            std::cout << "finish decode " << num++ << " frame." << std::endl;
-                        }
-                    }
-                }
-            }
-            av_packet_unref(pkt);
-        }
-        f.close();
-    } while (0);
-    av_frame_free(&frame);
-    av_packet_free(&pkt);
-    avcodec_close(codecCtx);
-    avcodec_free_context(&codecCtx);
-    avformat_free_context(fmtCtx);
+	// 9.分配内存
+	packet = av_packet_alloc();
+	frame = av_frame_alloc();
+	// 开始解码
+	std::string path = "audio_decode_f32le.pcm";
+	std::fstream f;
+	f.open(path, std::ios::out);
 
-    fclose(file);
-
-    return 0;
+	while (true) {
+		// 10.从pFormatCtx获取packet
+		if (av_read_frame(pFormatCtx, packet) < 0) break;
+		// 11.只有是视频流才输出
+		if (packet->stream_index == videoStreamIndex) 
+		{
+			// 12.发送packet到videoCodec
+			frameFinish = avcodec_send_packet(videoCodec, packet);
+			if (frameFinish < 0) continue;
+			// 13.从videoCodec获取返回frame
+			frameFinish = avcodec_receive_frame(videoCodec, frame);
+			if (frameFinish < 0) continue;
+			if (frameFinish >= 0) {
+				//这里获取frame,可以通过转格式，用qt,SDL，opencv画出来
+				num++;
+				std::cout << "finish decode " << num << " frame." << std::endl;
+				if (av_sample_fmt_is_planar(videoCodec->sample_fmt))
+				{
+					//计算采样点的大小
+					int numBytes = av_get_bytes_per_sample(videoCodec->sample_fmt);
+					//PCM播放时时LRLRLR格式，所以需要交错保存数据
+					// nb_samples是每帧采样总数，AAC采样总数一般为1024
+					for (size_t i = 0; i < frame->nb_samples; i++)
+					{
+						// channels通道数，其实就是声道，左右声道
+						for (size_t ch = 0; ch < videoCodec->channels; ch++)
+						{
+							//交叉写入，比如，原始音频是f32le两通道，f32le是浮点型，所以是32位，即3字节，le是小端 ，
+							// 就是两个通道各1024的采样点，长度各位1024*4，
+							// 先写左的一采样点，再写另外的采样点
+							f.write(reinterpret_cast<char*>(frame->data[ch] + numBytes * i), numBytes);
+						}
+					}
+				}
+			}
+		}
+		av_packet_unref(packet);
+		av_freep(packet);
+	}
+	// 14.释放内存
+	if (packet) {
+		av_packet_unref(packet);
+	}
+	if (frame) {
+		av_frame_free(&frame);
+	}
+	if (videoCodec) {
+		avcodec_close(videoCodec);
+	}
+	if (pFormatCtx) {
+		avformat_free_context(pFormatCtx);
+	}
+	return 0;
 }
