@@ -106,7 +106,7 @@ int main()
 	// 开始解码
 	std::string path = "audio_decode_f32le.pcm";
 	std::fstream f;
-	f.open(path, std::ios::out);
+	f.open(path, std::ios::out | std::ios::binary);
 
 	while (true) {
 		// 10.从pFormatCtx获取packet

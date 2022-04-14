@@ -31,6 +31,7 @@ int main()
 	vsnc::vnal::Parser parser("../../3rdparty/video/test.h264");
 	bool flag = true;
 	std::vector<vsnc::vnal::Nalu> lstNalu;
+	size_t daNum = 0;
 	while (flag)
 	{
 
@@ -40,8 +41,10 @@ int main()
 			flag = !flag;
 			break;
 		}
+		daNum += nalu.Length;
 		lstNalu.push_back(nalu);
 	}
+
 	std::cout << "frame: " << lstNalu.size() << std::endl;
 	// 0.FFmpeg解码 
 	// 获取视频流解码器或
