@@ -150,22 +150,17 @@ int main()
 	// 开始解码
 	int64_t test = 0;
 	while (true) {
-
-		AVStream* in_stream, * out_stream;
-
 		// 10.从pFormatCtx获取packet
 		if (av_read_frame(iFormatCtx, packet) < 0) {
 			break;
 		}
-		in_stream = iFormatCtx->streams[packet->stream_index];
-		out_stream = oFormatCtx->streams[packet->stream_index];
 		// 11.只有是视频流才输出
 		if (packet->stream_index == videoStreamIndex) {
 			// 12.发送packet到videoCodec
-			av_packet_rescale_ts(packet, videoStream->time_base, out_stream->time_base);
+			av_packet_rescale_ts(packet, videoStream->time_base, oFormatCtx->streams[packet->stream_index]->time_base);
 			packet->pos = -1;
 			ret = av_interleaved_write_frame(oFormatCtx, packet);
-
+			std::cout << "finish" << num++ << std::endl;
 		}
 		av_packet_unref(packet);
 		av_freep(packet);
