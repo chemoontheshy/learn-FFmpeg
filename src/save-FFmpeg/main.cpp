@@ -49,7 +49,7 @@ int main()
 	AVStream* videoStream;
 
 	//设置路径
-	filePath = "../../3rdparty/video/test.mp4";
+	filePath = "../../3rdparty/video/leishen.mp4";
 
 	// 1.初始化总句柄
 	iFormatCtx = avformat_alloc_context();
@@ -103,71 +103,69 @@ int main()
 	packet = av_packet_alloc();
 	frame = av_frame_alloc();
 
-	//// 保存视频
-	//// 1.初始化网络,本地文件可以不要
-	//// avformat_network_init();
-	//// 2.创建输出上下文 avformat_alloc_output_context2();
-	////输出的地址
-	//const char* outUrl = "test20210119.avi";
-	//AVFormatContext* oFormatCtx = nullptr;
-	//ret = avformat_alloc_output_context2(&oFormatCtx, nullptr, nullptr, outUrl);
-	//if (ret < 0) {
-	//	std::cout << "avformat_alloc_output_context2 failed." << std::endl;
-	//	return -1;
-	//}
-	//// 3.配置输出流 av_codec_parameters_copy
-	//auto outStream = avformat_new_stream(oFormatCtx, videoDecoder);
-	//if (!outStream) {
-	//	std::cout << "outStream failed." << std::endl;
-	//	return -1;
-	//}
-	//if (oFormatCtx->oformat->flags & AVFMT_GLOBALHEADER) {
-	//	std::cout << "need" << std::endl;
-	//	videoCodec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-	//}
-	//avcodec_parameters_from_context(outStream->codecpar, videoCodec);
+	// 保存视频
+	// 1.初始化网络,本地文件可以不要
+	// avformat_network_init();
+	// 2.创建输出上下文 avformat_alloc_output_context2();
+	//输出的地址
+	const char* outUrl = "test20220414.flv";
+	AVFormatContext* oFormatCtx = nullptr;
+	ret = avformat_alloc_output_context2(&oFormatCtx, nullptr, nullptr, outUrl);
+	if (ret < 0) {
+		std::cout << "avformat_alloc_output_context2 failed." << std::endl;
+		return -1;
+	}
+	// 3.配置输出流 av_codec_parameters_copy
+	auto outStream = avformat_new_stream(oFormatCtx, nullptr);
+	if (!outStream) {
+		std::cout << "outStream failed." << std::endl;
+		return -1;
+	}
+	ret = avcodec_parameters_copy(outStream->codecpar, videoStream->codecpar);
+	if (ret < 0) {
+		std::cout << "Failed to copy codec parameters\n" << std::endl;
+		return -1;
+	}
+	outStream->codecpar->codec_tag = 0;
 
-	////AVStream outStream;
-	//av_dump_format(oFormatCtx, 0, outUrl, 1);
-	//// 4.打开输出IO avio_open
-	//ret = avio_open(&oFormatCtx->pb, outUrl, AVIO_FLAG_READ_WRITE);
-	//if (ret < 0) {
-	//	char buf[1024];
-	//	//获取错误信息
-	//	av_strerror(ret, buf, sizeof(buf));
-	//	std::cout << " failed! " << buf << std::endl;
-	//	return -1;
-	//}
-	//std::cout << "test" << std::endl;
-	//// 5.写入头部信息 avformat_write_header
-	//ret = avformat_write_header(oFormatCtx, nullptr);
-	//if (ret < 0) {
-	//	std::cout << "write_header failed" << std::endl;
-	//	return -1;
-	//}
-	//char errorStr[1024];
-	//// 开始解码
-	//int64_t test = 0;
+	//AVStream outStream;
+	av_dump_format(oFormatCtx, 0, outUrl, 1);
+	// 4.打开输出IO avio_open
+	ret = avio_open(&oFormatCtx->pb, outUrl, AVIO_FLAG_READ_WRITE);
+	if (ret < 0) {
+		char buf[1024];
+		//获取错误信息
+		av_strerror(ret, buf, sizeof(buf));
+		std::cout << " failed! " << buf << std::endl;
+		return -1;
+	}
+	std::cout << "test" << std::endl;
+	// 5.写入头部信息 avformat_write_header
+	ret = avformat_write_header(oFormatCtx, nullptr);
+	if (ret < 0) {
+		std::cout << "write_header failed" << std::endl;
+		return -1;
+	}
+	char errorStr[1024];
+	// 开始解码
+	int64_t test = 0;
 	while (true) {
+
+		AVStream* in_stream, * out_stream;
+
 		// 10.从pFormatCtx获取packet
 		if (av_read_frame(iFormatCtx, packet) < 0) {
 			break;
 		}
-		// 11.只有是视频流才输出
-
+		in_stream = iFormatCtx->streams[packet->stream_index];
+		out_stream = oFormatCtx->streams[packet->stream_index];
 		// 11.只有是视频流才输出
 		if (packet->stream_index == videoStreamIndex) {
 			// 12.发送packet到videoCodec
-			frameFinish = avcodec_send_packet(videoCodec, packet);
-			if (frameFinish < 0) continue;
-			// 13.从videoCodec获取返回frame
-			frameFinish = avcodec_receive_frame(videoCodec, frame);
-			if (frameFinish < 0) continue;
-			if (frameFinish >= 0) {
-				//这里获取frame,可以通过转格式，用qt,SDL，opencv画出来
-				num++;
-				std::cout << "finish decode " << num << " frame." << std::endl;
-			}
+			av_packet_rescale_ts(packet, videoStream->time_base, out_stream->time_base);
+			packet->pos = -1;
+			ret = av_interleaved_write_frame(oFormatCtx, packet);
+
 		}
 		av_packet_unref(packet);
 		av_freep(packet);
