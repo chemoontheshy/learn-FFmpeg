@@ -48,8 +48,8 @@ int main()
 	// 视频流
 	AVStream* videoStream;
 
-	//设置路径
-	filePath = "../../3rdparty/video/leishen.mp4";
+	// 设置路径
+	filePath = "../../3rdparty/video/31s_860x480_h264_yuv420p_HE-AAC.mp4";
 
 	// 1.初始化总句柄
 	iFormatCtx = avformat_alloc_context();
@@ -104,10 +104,10 @@ int main()
 	frame = av_frame_alloc();
 
 	// 保存视频
-	// 1.初始化网络,本地文件可以不要
+	// 2.1.初始化网络,本地文件可以不要
 	// avformat_network_init();
-	// 2.创建输出上下文 avformat_alloc_output_context2();
-	//输出的地址
+	// 2.2.创建输出上下文 avformat_alloc_output_context2();
+	// 输出的地址
 	const char* outUrl = "test20220414.flv";
 	AVFormatContext* oFormatCtx = nullptr;
 	ret = avformat_alloc_output_context2(&oFormatCtx, nullptr, nullptr, outUrl);
@@ -115,7 +115,7 @@ int main()
 		std::cout << "avformat_alloc_output_context2 failed." << std::endl;
 		return -1;
 	}
-	// 3.配置输出流 av_codec_parameters_copy
+	// 2.3.配置输出流 av_codec_parameters_copy
 	auto outStream = avformat_new_stream(oFormatCtx, nullptr);
 	if (!outStream) {
 		std::cout << "outStream failed." << std::endl;
@@ -128,9 +128,9 @@ int main()
 	}
 	outStream->codecpar->codec_tag = 0;
 
-	//AVStream outStream;
+	// AVStream outStream;
 	av_dump_format(oFormatCtx, 0, outUrl, 1);
-	// 4.打开输出IO avio_open
+	// 2.4.打开输出IO avio_open
 	ret = avio_open(&oFormatCtx->pb, outUrl, AVIO_FLAG_READ_WRITE);
 	if (ret < 0) {
 		char buf[1024];
@@ -140,7 +140,7 @@ int main()
 		return -1;
 	}
 	std::cout << "test" << std::endl;
-	// 5.写入头部信息 avformat_write_header
+	// 2.5.写入头部信息 avformat_write_header
 	ret = avformat_write_header(oFormatCtx, nullptr);
 	if (ret < 0) {
 		std::cout << "write_header failed" << std::endl;
@@ -149,6 +149,7 @@ int main()
 	char errorStr[1024];
 	// 开始解码
 	int64_t test = 0;
+	size_t packet_len = 0;
 	while (true) {
 		// 10.从pFormatCtx获取packet
 		if (av_read_frame(iFormatCtx, packet) < 0) {
@@ -157,15 +158,21 @@ int main()
 		// 11.只有是视频流才输出
 		if (packet->stream_index == videoStreamIndex) {
 			// 12.发送packet到videoCodec
+			packet_len += packet->size;
 			av_packet_rescale_ts(packet, videoStream->time_base, oFormatCtx->streams[packet->stream_index]->time_base);
 			packet->pos = -1;
+			// 2.6.写入一帧数据
 			ret = av_interleaved_write_frame(oFormatCtx, packet);
 			std::cout << "finish" << num++ << std::endl;
 		}
 		av_packet_unref(packet);
 		av_freep(packet);
 	}
-	//av_write_trailer(oFormatCtx);
+	std::cout << "packet.size" << packet_len << std::endl;
+	// 2.7.把剩余的都写入
+	av_interleaved_write_frame(oFormatCtx, nullptr);
+	// 2.8.写入结尾
+	av_write_trailer(oFormatCtx);
 	// 14.释放内存
 	if (packet) {
 		av_packet_unref(packet);
@@ -179,8 +186,8 @@ int main()
 	if (iFormatCtx) {
 		avformat_free_context(iFormatCtx);
 	}
-	/*if (oFormatCtx) {
+	if (oFormatCtx) {
 		avformat_free_context(oFormatCtx);
-	}*/
+	}
 	return 0;
 }

@@ -147,6 +147,7 @@ int main()
 		av_packet_unref(packet);
 		av_freep(packet);
 	}
+	f.close();
 	// 14.ÊÍ·ÅÄÚ´æ
 	if (packet) {
 		av_packet_unref(packet);
