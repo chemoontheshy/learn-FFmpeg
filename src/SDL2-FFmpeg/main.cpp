@@ -141,6 +141,7 @@ int main(int argc, char* argv[])
 					std::cout << "Error while parsing" << std::endl;
 					break;
 				}
+			
 				if (packet->size > 0) {
 					frameFinish = avcodec_send_packet(videoCodec, packet);
 

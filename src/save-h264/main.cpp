@@ -124,7 +124,7 @@ int main()
 
 	// 4初始化过滤器
 	av_bsf_init(absCtx);
-
+	//标定
 	while (true) {
 		// 10.从pFormatCtx获取packet
 		if (av_read_frame(pFormatCtx, packet) < 0) {
