@@ -17,6 +17,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "decode-Audio", "decode-Audi
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "save-h264", "save-h264\save-h264.vcxproj", "{2AF0C266-6800-47B9-BA0B-0FBB3493ADAD}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "naluType", "naluType\naluType.vcxproj", "{3FC73FE3-15CF-4A55-B93F-72C0381C9152}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -81,6 +83,14 @@ Global
 		{2AF0C266-6800-47B9-BA0B-0FBB3493ADAD}.Release|x64.Build.0 = Release|x64
 		{2AF0C266-6800-47B9-BA0B-0FBB3493ADAD}.Release|x86.ActiveCfg = Release|Win32
 		{2AF0C266-6800-47B9-BA0B-0FBB3493ADAD}.Release|x86.Build.0 = Release|Win32
+		{3FC73FE3-15CF-4A55-B93F-72C0381C9152}.Debug|x64.ActiveCfg = Debug|x64
+		{3FC73FE3-15CF-4A55-B93F-72C0381C9152}.Debug|x64.Build.0 = Debug|x64
+		{3FC73FE3-15CF-4A55-B93F-72C0381C9152}.Debug|x86.ActiveCfg = Debug|Win32
+		{3FC73FE3-15CF-4A55-B93F-72C0381C9152}.Debug|x86.Build.0 = Debug|Win32
+		{3FC73FE3-15CF-4A55-B93F-72C0381C9152}.Release|x64.ActiveCfg = Release|x64
+		{3FC73FE3-15CF-4A55-B93F-72C0381C9152}.Release|x64.Build.0 = Release|x64
+		{3FC73FE3-15CF-4A55-B93F-72C0381C9152}.Release|x86.ActiveCfg = Release|Win32
+		{3FC73FE3-15CF-4A55-B93F-72C0381C9152}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
