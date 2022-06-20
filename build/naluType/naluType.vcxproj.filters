@@ -3,8 +3,10 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\naluType\main.cpp" />
     <ClCompile Include="..\..\src\naluType\splitlib.cpp" />
+    <ClCompile Include="..\..\src\naluType\parseSPS.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\naluType\splitlib.h" />
+    <ClInclude Include="..\..\src\naluType\parseSPS.h" />
   </ItemGroup>
 </Project>

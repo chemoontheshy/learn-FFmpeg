@@ -148,9 +148,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\naluType\main.cpp" />
+    <ClCompile Include="..\..\src\naluType\parseSPS.cpp" />
     <ClCompile Include="..\..\src\naluType\splitlib.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\naluType\parseSPS.h" />
     <ClInclude Include="..\..\src\naluType\splitlib.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
