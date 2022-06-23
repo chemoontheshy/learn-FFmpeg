@@ -26,7 +26,7 @@ struct NaluHeader
 
 int main()
 {
-	vsnc::vnal::SplitNalu splitNalu("../../3rdparty/video/test.h264");
+	vsnc::vnal::SplitNalu splitNalu("../../3rdparty/video/four_slice.h264");
 	size_t num = 0;
 	size_t len = 0;
 	size_t startcodeLen = 0;
